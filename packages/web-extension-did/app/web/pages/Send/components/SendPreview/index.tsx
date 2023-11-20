@@ -1,4 +1,3 @@
-import { ZERO } from '@portkey-wallet/constants/misc';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 import { useWalletInfo } from 'store/Provider/hooks';
@@ -56,24 +55,6 @@ export default function SendPreview({
     () => getEntireDIDAelfAddress(wallet?.[chainId]?.caAddress || '', undefined, chainId),
     [chainId, wallet],
   );
-  const renderEstimateAmount = useMemo(() => {
-    if (ZERO.plus(amount).isLessThanOrEqualTo(crossChainFee)) {
-      return (
-        <>
-          <span className="usd">{!isTestNet && '$0'}</span>0
-        </>
-      );
-    } else {
-      return (
-        <>
-          <span className="usd">
-            {!isTestNet && amountInUsdShow(ZERO.plus(amount).minus(crossChainFee).toString(), 0, symbol)}
-          </span>
-          {formatAmountShow(ZERO.plus(amount).minus(crossChainFee))}
-        </>
-      );
-    }
-  }, [amount, amountInUsdShow, crossChainFee, isTestNet, symbol]);
 
   return (
     <div className="send-preview">
@@ -135,7 +116,7 @@ export default function SendPreview({
           </span>
         </p>
       </div>
-      {isCross && symbol === defaultToken.symbol && (
+      {isCross && (
         <>
           <div className="fee-preview">
             <span className="label">Cross-chain Transaction fee</span>
@@ -144,12 +125,6 @@ export default function SendPreview({
                 <span className="usd">{!isTestNet && amountInUsdShow(crossChainFee, 0, symbol)}</span>
                 {` ${formatAmountShow(crossChainFee)} ${defaultToken.symbol}`}
               </span>
-            </p>
-          </div>
-          <div className="fee-preview">
-            <span className="label">Estimated amount received</span>
-            <p className="value">
-              <span className="symbol">{renderEstimateAmount}</span>
             </p>
           </div>
         </>

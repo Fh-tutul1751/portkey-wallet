@@ -1,4 +1,4 @@
-import { useCurrentChain, useDefaultToken, useIsValidSuffix } from '@portkey-wallet/hooks/hooks-ca/chainList';
+import { useCurrentChain, useIsValidSuffix } from '@portkey-wallet/hooks/hooks-ca/chainList';
 import { useCurrentNetworkInfo } from '@portkey-wallet/hooks/hooks-ca/network';
 import { useCurrentWalletInfo } from '@portkey-wallet/hooks/hooks-ca/wallet';
 import { addFailedActivity, removeFailedActivity } from '@portkey-wallet/store/store-ca/activity/slice';
@@ -27,7 +27,7 @@ import { ZERO } from '@portkey-wallet/constants/misc';
 import { TransactionError } from '@portkey-wallet/constants/constants-ca/assets';
 import { the2ThFailedActivityItemType } from '@portkey-wallet/types/types-ca/activity';
 import { contractErrorHandler } from 'utils/tryErrorHandler';
-import { useFetchTxFee, useGetTxFee } from '@portkey-wallet/hooks/hooks-ca/useTxFee';
+import { useFetchTxFee } from '@portkey-wallet/hooks/hooks-ca/useTxFee';
 import PromptFrame from 'pages/components/PromptFrame';
 import clsx from 'clsx';
 import { AddressCheckError } from '@portkey-wallet/store/store-ca/assets/type';
@@ -73,7 +73,6 @@ export default function Send() {
   const [txFee, setTxFee] = useState<string>();
   const currentChain = useCurrentChain(state.chainId);
   useFetchTxFee();
-  const { crossChain: crossChainFee } = useGetTxFee(state.chainId);
   const tokenInfo = useMemo(
     () => ({
       chainId: state.chainId,
@@ -87,7 +86,6 @@ export default function Send() {
     }),
     [state],
   );
-  const defaultToken = useDefaultToken(state.chainId as ChainId);
 
   const validateToAddress = useCallback(
     (value: { name?: string; address: string } | undefined) => {
@@ -161,7 +159,7 @@ export default function Send() {
     async (num = ''): Promise<string | void> => {
       try {
         if (!toAccount?.address) throw 'No toAccount';
-        const privateKey = await aes.decrypt(wallet.AESEncryptPrivateKey, passwordSeed);
+        const privateKey = aes.decrypt(wallet.AESEncryptPrivateKey, passwordSeed);
         if (!privateKey) throw t(WalletError.invalidPrivateKey);
         if (!currentChain) throw 'No ChainInfo';
         const feeRes = await getTransferFee({
@@ -203,16 +201,11 @@ export default function Send() {
         return 'Synchronizing on-chain account information...';
       }
       if (type === 'token') {
-        if (timesDecimals(amount, tokenInfo.decimals).isGreaterThan(balance)) {
+        if (timesDecimals(amount, tokenInfo.decimals).gt(balance)) {
           return TransactionError.TOKEN_NOT_ENOUGH;
         }
-        if (isCrossChain(toAccount.address, chainInfo?.chainId ?? 'AELF') && symbol === defaultToken.symbol) {
-          if (ZERO.plus(crossChainFee).isGreaterThanOrEqualTo(amount)) {
-            return TransactionError.CROSS_NOT_ENOUGH;
-          }
-        }
       } else if (type === 'nft') {
-        if (ZERO.plus(amount).isGreaterThan(balance)) {
+        if (ZERO.plus(amount).gt(balance)) {
           return TransactionError.NFT_NOT_ENOUGH;
         }
       } else {
@@ -232,21 +225,7 @@ export default function Send() {
     } finally {
       setLoading(false);
     }
-  }, [
-    setLoading,
-    amount,
-    type,
-    checkManagerSyncState,
-    state.chainId,
-    getTranslationInfo,
-    tokenInfo.decimals,
-    balance,
-    toAccount.address,
-    chainInfo?.chainId,
-    symbol,
-    defaultToken.symbol,
-    crossChainFee,
-  ]);
+  }, [setLoading, amount, type, checkManagerSyncState, state.chainId, getTranslationInfo, tokenInfo.decimals, balance]);
 
   const sendHandler = useCallback(async () => {
     try {
@@ -266,7 +245,6 @@ export default function Send() {
           caHash: wallet?.caHash || '',
           amount: timesDecimals(amount, tokenInfo.decimals).toNumber(),
           toAddress: toAccount.address,
-          fee: timesDecimals(txFee, defaultToken.decimals).toNumber(),
         });
       } else {
         console.log('sameChainTransfers==sendHandler');
@@ -303,7 +281,6 @@ export default function Send() {
     amount,
     chainInfo,
     currentNetwork.walletType,
-    defaultToken.decimals,
     dispatch,
     navigate,
     passwordSeed,
@@ -311,7 +288,6 @@ export default function Send() {
     showErrorModal,
     toAccount.address,
     tokenInfo,
-    txFee,
     wallet,
   ]);
 

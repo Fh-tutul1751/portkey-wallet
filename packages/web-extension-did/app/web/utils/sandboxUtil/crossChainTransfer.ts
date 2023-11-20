@@ -5,11 +5,7 @@ import { getChainIdByAddress } from '@portkey-wallet/utils';
 import { crossChainTransferToCa } from './crossChainTransferToCa';
 import { managerTransfer } from './managerTransfer';
 import { getChainNumber } from '@portkey-wallet/utils/aelf';
-import { ZERO } from '@portkey-wallet/constants/misc';
-import { timesDecimals } from '@portkey-wallet/utils/converter';
 import { the2ThFailedActivityItemType } from '@portkey-wallet/types/types-ca/activity';
-import { getTxFee } from 'store/utils/getStore';
-import { DEFAULT_TOKEN } from '@portkey-wallet/constants/constants-ca/wallet';
 import { getTokenInfo } from './getTokenInfo';
 
 export type CrossChainTransferIntervalParams = Omit<CrossChainTransferParams, 'caHash' | 'fee'> & {
@@ -67,7 +63,6 @@ interface CrossChainTransferParams {
   amount: number;
   toAddress: string;
   memo?: string;
-  fee: number;
 }
 const crossChainTransfer = async ({
   chainInfo,
@@ -94,26 +89,6 @@ const crossChainTransfer = async ({
 
   if (typeof issueChainId !== 'number') throw Error('GetTokenInfo Error');
   try {
-    // let _amount = amount;
-    // if (tokenInfo.symbol === nativeToken.symbol) {
-    //   //
-    //   _amount = ZERO.plus(amount).plus(fee).toNumber();
-    // } else {
-    //   await managerTransfer({
-    //     rpcUrl: chainInfo.endPoint,
-    //     address: chainInfo.caContractAddress,
-    //     chainType,
-    //     privateKey,
-    //     paramsOption: {
-    //       caHash,
-    //       symbol: 'ELF',
-    //       to: managerAddress,
-    //       amount: fee,
-    //       memo,
-    //     },
-    //   });
-    // }
-
     // first transaction:transfer to manager itself
     managerTransferResult = await managerTransfer({
       rpcUrl: chainInfo.endPoint,
@@ -124,7 +99,7 @@ const crossChainTransfer = async ({
         caHash,
         symbol: tokenInfo.symbol,
         to: managerAddress,
-        amount: amount,
+        amount,
         memo,
       },
     });
@@ -137,21 +112,14 @@ const crossChainTransfer = async ({
   console.log(managerAddress, 'managerAddress===');
 
   // second transaction:crossChain transfer to toAddress
-
-  // return;
   // TODO Only support chainType: aelf
-  let _amount = amount;
-  const { crossChain: crossChainFee } = getTxFee(tokenInfo.chainId);
-  if (tokenInfo.symbol === DEFAULT_TOKEN.symbol) {
-    _amount = ZERO.plus(amount).minus(timesDecimals(crossChainFee, DEFAULT_TOKEN.decimals)).toNumber();
-  }
 
   const crossChainTransferParams = {
     chainInfo,
     chainType,
     privateKey,
     managerAddress,
-    amount: _amount,
+    amount,
     tokenInfo,
     memo,
     toAddress,
@@ -166,7 +134,7 @@ const crossChainTransfer = async ({
         tokenInfo,
         chainType,
         managerAddress,
-        amount: _amount,
+        amount,
         memo,
         toAddress,
         issueChainId,

@@ -1,4 +1,3 @@
-import { ZERO } from '@portkey-wallet/constants/misc';
 import { BaseToken } from '@portkey-wallet/types/types-ca/token';
 import { divDecimals, formatAmountShow } from '@portkey-wallet/utils/converter';
 import { Button, Input } from 'antd';
@@ -7,10 +6,9 @@ import { handleKeyDown } from 'pages/Send/utils/util.keyDown';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getBalance } from 'utils/sandboxUtil/getBalance';
-import { useCurrentChain, useDefaultToken } from '@portkey-wallet/hooks/hooks-ca/chainList';
+import { useCurrentChain } from '@portkey-wallet/hooks/hooks-ca/chainList';
 import { ChainId } from '@portkey-wallet/types';
 import { useCurrentNetworkInfo, useIsTestnet } from '@portkey-wallet/hooks/hooks-ca/network';
-import { useGetTxFee } from '@portkey-wallet/hooks/hooks-ca/useTxFee';
 import { ELF_SYMBOL } from '@portkey-wallet/constants/constants-ca/assets';
 import CustomSvg from 'components/CustomSvg';
 import { useAmountInUsdShow, useGetCurrentAccountTokenPrice } from '@portkey-wallet/hooks/hooks-ca/useTokensPrice';
@@ -22,7 +20,6 @@ export default function TokenInput({
   value,
   errorMsg,
   onChange,
-  getTranslationInfo,
   setErrorMsg,
 }: {
   fromAccount: { address: string; AESEncryptPrivateKey: string };
@@ -40,13 +37,10 @@ export default function TokenInput({
   const { t } = useTranslation();
   const [amount, setAmount] = useState<string>(value ? `${value} ${token.symbol}` : '');
   const [balance, setBalance] = useState<string>('');
-  const [maxAmount, setMaxAmount] = useState('');
   const [, getTokenPrice] = useGetCurrentAccountTokenPrice();
   const amountInUsdShow = useAmountInUsdShow();
   const checkManagerSyncState = useCheckManagerSyncState();
   const [isManagerSynced, setIsManagerSynced] = useState(true);
-  const { max: maxFee } = useGetTxFee(token.chainId);
-  const defaultToken = useDefaultToken(token.chainId);
 
   const amountInUsd = useMemo(
     () => amountInUsdShow(value || amount, 0, token.symbol),
@@ -74,59 +68,11 @@ export default function TokenInput({
     console.log(result, currentChain, 'balances==getTokenBalance=');
   }, [currentChain, currentNetwork.walletType, fromAccount.address, token.address, token.symbol]);
 
-  const getMaxAmount = useCallback(async () => {
-    if (!balance) {
-      setMaxAmount('0');
-      return;
-    }
-    if (token.symbol === defaultToken.symbol) {
-      if (ZERO.plus(divDecimals(balance, token.decimals)).isLessThanOrEqualTo(maxFee)) {
-        setMaxAmount(divDecimals(balance, token.decimals).toString());
-        return;
-      }
-      const _isManagerSynced = await checkManagerSyncState(token.chainId);
-      setIsManagerSynced(_isManagerSynced);
-      if (!_isManagerSynced) return;
-      const fee = await getTranslationInfo(divDecimals(balance, token.decimals).toString());
-      if (fee) {
-        setMaxAmount(divDecimals(balance, token.decimals).toString());
-      } else {
-        setMaxAmount(ZERO.plus(divDecimals(balance, token.decimals)).minus(maxFee).toString());
-      }
-    } else {
-      setMaxAmount(divDecimals(balance, token.decimals).toString());
-    }
-  }, [
-    balance,
-    checkManagerSyncState,
-    defaultToken.symbol,
-    getTranslationInfo,
-    maxFee,
-    token.chainId,
-    token.decimals,
-    token.symbol,
-  ]);
-
   useEffect(() => {
     getTokenBalance();
-    getMaxAmount();
-  }, [getMaxAmount, getTokenBalance]);
+  }, [getTokenBalance]);
 
   const handleAmountBlur = useCallback(() => {
-    // setAmount((v) => {
-    // const reg = new RegExp(`.+\\.\\d{0,${token?.decimals || 8}}|.+`);
-    // const valueProcessed = v
-    //   ?.replace(/\.+$/, '')
-    //   .replace(/^0+\./, '0.')
-    //   .replace(/^0+/, '')
-    //   .replace(/^\.+/, '0.')
-    //   .match(reg)
-    //   ?.toString();
-    // const valueString = valueProcessed ? `${parseInputChange(valueProcessed, ZERO, token?.decimals) || 0}` : '';
-    // onChange(valueString);
-
-    // return valueString.length ? `${valueString} ${token.symbol}` : '';
-    // });
     onChange({ amount, balance });
   }, [amount, balance, onChange]);
 
@@ -134,13 +80,14 @@ export default function TokenInput({
     const _isManagerSynced = await checkManagerSyncState(token.chainId);
     setIsManagerSynced(_isManagerSynced);
     if (_isManagerSynced) {
-      setAmount(maxAmount);
-      onChange({ amount: maxAmount, balance });
+      const _amount = divDecimals(balance, token.decimals).toFixed();
+      setAmount(_amount);
+      onChange({ amount: _amount, balance });
       setErrorMsg('');
     } else {
       setErrorMsg('Synchronizing on-chain account information...');
     }
-  }, [balance, checkManagerSyncState, maxAmount, onChange, setErrorMsg, token.chainId]);
+  }, [balance, checkManagerSyncState, onChange, setErrorMsg, token.chainId, token.decimals]);
 
   return (
     <div className="amount-wrap">
