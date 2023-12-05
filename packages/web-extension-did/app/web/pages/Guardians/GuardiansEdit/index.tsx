@@ -22,21 +22,25 @@ import GuardianEditPopup from './Popup';
 import CustomModal from '../../components/CustomModal';
 import { useCommonState } from 'store/Provider/hooks';
 import AccountShow from '../components/AccountShow';
-import { guardianIconMap } from '../utils';
+import { VerifierStatusItem, getVerifierStatusMap, guardianIconMap } from '../utils';
 import './index.less';
 import aes from '@portkey-wallet/utils/aes';
 import { GuardianMth } from 'types/guardians';
 import { handleGuardian } from 'utils/sandboxUtil/handleGuardian';
 import { useCurrentChain } from '@portkey-wallet/hooks/hooks-ca/chainList';
 import { useCurrentNetworkInfo } from '@portkey-wallet/hooks/hooks-ca/network';
+import clsx from 'clsx';
 
 export default function GuardiansEdit() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { currentGuardian, userGuardiansList, preGuardian, opGuardian } = useGuardiansInfo();
-  const { verifierMap } = useGuardiansInfo();
+  const { verifierMap, currentGuardian, userGuardiansList, preGuardian, opGuardian } = useGuardiansInfo();
+  const verifierStatusMap = useMemo(
+    () => getVerifierStatusMap(verifierMap, userGuardiansList),
+    [userGuardiansList, verifierMap],
+  );
   const [selectVal, setSelectVal] = useState<string>(opGuardian?.verifier?.id as string);
-  const [exist, setExist] = useState<boolean>(false);
+  const [verifierExist, setVerifierExist] = useState<boolean>(false);
   const { walletInfo } = useCurrentWallet();
   const userGuardianList = useGuardianList();
   const dispatch = useAppDispatch();
@@ -45,19 +49,26 @@ export default function GuardiansEdit() {
 
   const selectOptions = useMemo(
     () =>
-      Object.values(verifierMap ?? {})?.map((item: VerifierItem) => ({
-        value: item.id,
-        children: (
-          <div className="flex verifier-option">
-            <BaseVerifierIcon fallback={item.name[0]} src={item.imageUrl} />
-            <span className="title">{item.name}</span>
-          </div>
-        ),
-      })),
-    [verifierMap],
+      Object.values(verifierStatusMap ?? {})?.map((item: VerifierStatusItem) => {
+        const disabled = item.isUsed && item.id !== preGuardian?.verifier?.id;
+        return {
+          value: item.id,
+          children: (
+            <div className={clsx(['flex', 'verifier-option', disabled && 'no-use'])}>
+              <BaseVerifierIcon fallback={item.name[0]} src={item.imageUrl} />
+              <span className="title">{item.name}</span>
+            </div>
+          ),
+          disabled,
+        };
+      }),
+    [preGuardian?.verifier?.id, verifierStatusMap],
   );
 
-  const disabled = useMemo(() => exist || selectVal === preGuardian?.verifier?.id, [exist, selectVal, preGuardian]);
+  const disabled = useMemo(
+    () => verifierExist || selectVal === preGuardian?.verifier?.id,
+    [verifierExist, selectVal, preGuardian],
+  );
 
   const targetVerifier = useMemo(
     () => Object.values(verifierMap ?? {})?.filter((item: VerifierItem) => item.id === selectVal),
@@ -65,16 +76,29 @@ export default function GuardiansEdit() {
   );
 
   const handleChange = useCallback((value: string) => {
-    setExist(false);
+    setVerifierExist(false);
     setSelectVal(value);
   }, []);
 
+  const checkVerifierIsExist = useCallback(async () => {
+    try {
+      setLoading(true);
+      await userGuardianList({ caHash: walletInfo.caHash });
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.log('===guardian edit userGuardianList error', error);
+    }
+    const _verifierStatusMap = getVerifierStatusMap(verifierMap, userGuardiansList);
+    const _verifierIsExist = Object.values(_verifierStatusMap).some(
+      (verifier) => verifier.id === selectVal && verifier.isUsed,
+    );
+    return _verifierIsExist;
+  }, [selectVal, setLoading, userGuardianList, userGuardiansList, verifierMap, walletInfo.caHash]);
+
   const guardiansChangeHandler = useCallback(async () => {
-    const existFlag: boolean =
-      Object.values(userGuardiansList ?? {})?.some((item) => {
-        return item.key === `${opGuardian?.guardianAccount}&${selectVal}`;
-      }) ?? false;
-    setExist(existFlag);
+    const existFlag: boolean = await checkVerifierIsExist();
+    setVerifierExist(existFlag);
     if (existFlag) return;
     try {
       dispatch(
@@ -102,6 +126,7 @@ export default function GuardiansEdit() {
       message.error(handleErrorMessage(error));
     }
   }, [
+    checkVerifierIsExist,
     currentGuardian?.guardianAccount,
     dispatch,
     navigate,
@@ -110,7 +135,6 @@ export default function GuardiansEdit() {
     setLoading,
     targetVerifier,
     userGuardianList,
-    userGuardiansList,
     walletInfo.caHash,
   ]);
 
@@ -224,7 +248,7 @@ export default function GuardiansEdit() {
           <div className="input-item">
             <p className="label">{t('Verifier')}</p>
             <CustomSelect className="select" value={selectVal} onChange={handleChange} items={selectOptions} />
-            {exist && <div className="error">{t('This guardian already exists')}</div>}
+            {verifierExist && <div className="error">{t('This verifier already exists')}</div>}
           </div>
         </div>
         <div className="btn-wrap">
@@ -237,7 +261,17 @@ export default function GuardiansEdit() {
         </div>
       </div>
     ),
-    [checkRemove, disabled, exist, guardiansChangeHandler, handleChange, opGuardian, selectOptions, selectVal, t],
+    [
+      checkRemove,
+      disabled,
+      verifierExist,
+      guardiansChangeHandler,
+      handleChange,
+      opGuardian,
+      selectOptions,
+      selectVal,
+      t,
+    ],
   );
   const headerTitle = useMemo(() => t('Edit Guardians'), [t]);
   const onBack = useCallback(() => {

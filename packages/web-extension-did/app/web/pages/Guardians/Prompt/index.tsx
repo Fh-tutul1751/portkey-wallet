@@ -5,11 +5,12 @@ import './index.less';
 
 export interface IGuardianProps {
   headerTitle: string;
-  renderAddBtn: ReactNode;
+  renderAddBtn?: ReactNode;
   renderGuardianList: ReactNode;
+  renderGuardianTip?: ReactNode;
 }
 
-const GuardiansPrompt = ({ headerTitle, renderAddBtn, renderGuardianList }: IGuardianProps) => {
+const GuardiansPrompt = ({ headerTitle, renderAddBtn, renderGuardianList, renderGuardianTip }: IGuardianProps) => {
   return (
     <div className="guardians-prompt flex">
       <div className="guardians-body">
@@ -21,6 +22,7 @@ const GuardiansPrompt = ({ headerTitle, renderAddBtn, renderGuardianList }: IGua
           rightElement={renderAddBtn}
         />
         <div className="guardians-content">{renderGuardianList}</div>
+        <div className="guardians-tip">{renderGuardianTip}</div>
       </div>
       <Outlet />
     </div>
