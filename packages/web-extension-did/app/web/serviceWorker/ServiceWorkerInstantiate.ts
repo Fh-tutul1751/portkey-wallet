@@ -88,6 +88,26 @@ export default class ServiceWorkerInstantiate {
       getPassword: () => seed,
     });
     this.setupInternalMessaging();
+    this.onFCMMessaging();
+  }
+
+  onFCMMessaging() {
+    chrome.gcm.onMessage.addListener((message) => {
+      const { data = {} } = message;
+      const _count = (data as any)['gcm.notification.notification_count'];
+      console.log(message, '===onFCMMessaging');
+      this.setBadge({
+        value: _count,
+      });
+    });
+  }
+
+  setBadge(props: { value?: string; color?: string }) {
+    const { value, color } = props;
+    // set a badge
+    value && chrome.action.setBadgeText({ text: value });
+    // set badge color
+    color && chrome.action.setBadgeBackgroundColor({ color });
   }
 
   // Watches the internal messaging system ( LocalStream )

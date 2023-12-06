@@ -13,7 +13,7 @@ import { useActiveLockStatus } from 'hooks/useActiveLockStatus';
 import useLocationChange from 'hooks/useLocationChange';
 import { useCheckManagerOnLogout } from 'hooks/useLogout';
 import { useCheckManager } from '@portkey-wallet/hooks/hooks-ca/graphql';
-import { useCheckUpdate } from 'hooks/useCheckUpdate';
+// import { useCheckUpdate } from 'hooks/useCheckUpdate';
 import { usePhoneCountryCode } from '@portkey-wallet/hooks/hooks-ca/misc';
 import { useFetchTxFee } from '@portkey-wallet/hooks/hooks-ca/useTxFee';
 import { useLocation } from 'react-router';
@@ -64,13 +64,13 @@ export default function Updater() {
   useLocationChange();
   useChainListFetch();
   useRefreshTokenConfig(passwordSeed);
-  const checkUpdate = useCheckUpdate();
+  // const checkUpdate = useCheckUpdate();
 
   useCheckManager(checkManagerOnLogout);
   useFetchTxFee();
-  useEffect(() => {
-    checkUpdate();
-  }, [checkUpdate]);
+  // useEffect(() => {
+  //   checkUpdate();
+  // }, [checkUpdate]);
 
   usePortkeyUIConfig();
 
