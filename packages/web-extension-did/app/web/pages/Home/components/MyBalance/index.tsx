@@ -26,7 +26,7 @@ import { useFreshTokenPrice } from '@portkey-wallet/hooks/hooks-ca/useTokensPric
 import { useAccountBalanceUSD } from '@portkey-wallet/hooks/hooks-ca/balances';
 import useVerifierList from 'hooks/useVerifierList';
 import useGuardianList from 'hooks/useGuardianList';
-import { FAUCET_URL } from '@portkey-wallet/constants/constants-ca/payment';
+// import { FAUCET_URL } from '@portkey-wallet/constants/constants-ca/payment';
 import { BalanceTab } from '@portkey-wallet/constants/constants-ca/assets';
 import PromptEmptyElement from 'pages/components/PromptEmptyElement';
 import { useCurrentNetworkInfo, useIsMainnet } from '@portkey-wallet/hooks/hooks-ca/network';
@@ -39,7 +39,7 @@ import { useCheckSecurity } from 'hooks/useSecurity';
 import { useDisclaimer } from '@portkey-wallet/hooks/hooks-ca/disclaimer';
 import BridgeModal from '../BridgeModal';
 import './index.less';
-import { useExtensionBridgeButtonShow, useExtensionBuyButtonShow } from 'hooks/cms';
+import { useExtensionBridgeButtonShow } from 'hooks/cms';
 
 export interface TransactionResult {
   total: number;
@@ -92,7 +92,7 @@ export default function MyBalance() {
   useVerifierList();
 
   const { isBridgeShow } = useExtensionBridgeButtonShow();
-  const { isBuyButtonShow } = useExtensionBuyButtonShow();
+  // const { isBuyButtonShow } = useExtensionBuyButtonShow();
   const isShowChat = useIsChatShow();
   const unreadCount = useUnreadCount();
   const checkSecurity = useCheckSecurity();
@@ -179,16 +179,16 @@ export default function MyBalance() {
     setActiveKey(key);
   }, []);
 
-  const handleBuy = useCallback(() => {
-    if (isMainNet) {
-      navigate('/buy');
-    } else {
-      const openWinder = window.open(FAUCET_URL, '_blank');
-      if (openWinder) {
-        openWinder.opener = null;
-      }
-    }
-  }, [isMainNet, navigate]);
+  // const handleBuy = useCallback(() => {
+  //   if (isMainNet) {
+  //     navigate('/buy');
+  //   } else {
+  //     const openWinder = window.open(FAUCET_URL, '_blank');
+  //     if (openWinder) {
+  //       openWinder.opener = null;
+  //     }
+  //   }
+  // }, [isMainNet, navigate]);
 
   const handleBridge = useCallback(async () => {
     const isSafe = await checkSecurity(originChainId);
@@ -223,10 +223,10 @@ export default function MyBalance() {
       </div>
       <BalanceCard
         amount={accountBalance}
-        isShowBuy={isBuyButtonShow}
+        isShowBuy={false}
         isShowBridge={isBridgeShow}
         onClickBridge={handleBridge}
-        onBuy={handleBuy}
+        // onBuy={handleBuy}
         onSend={async () => {
           setNavTarget('send');
           return setTokenOpen(true);

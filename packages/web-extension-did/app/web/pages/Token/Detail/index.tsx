@@ -4,15 +4,15 @@ import BalanceCard from 'pages/components/BalanceCard';
 import { divDecimals, formatAmountShow } from '@portkey-wallet/utils/converter';
 import Activity from 'pages/Home/components/Activity';
 import { transNetworkText } from '@portkey-wallet/utils/activity';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import clsx from 'clsx';
 import { useCommonState } from 'store/Provider/hooks';
 import PromptFrame from 'pages/components/PromptFrame';
 import { useFreshTokenPrice, useAmountInUsdShow } from '@portkey-wallet/hooks/hooks-ca/useTokensPrice';
-import { FAUCET_URL } from '@portkey-wallet/constants/constants-ca/payment';
+// import { FAUCET_URL } from '@portkey-wallet/constants/constants-ca/payment';
 import { useIsMainnet } from '@portkey-wallet/hooks/hooks-ca/network';
 import './index.less';
-import { useExtensionBuyButtonShow } from 'hooks/cms';
+// import { useExtensionBuyButtonShow } from 'hooks/cms';
 
 export enum TokenTransferStatus {
   CONFIRMED = 'Confirmed',
@@ -24,24 +24,24 @@ function TokenDetail() {
   const { state: currentToken } = useLocation();
   const isMainNet = useIsMainnet();
   const { isPrompt } = useCommonState();
-  const { isBuyButtonShow } = useExtensionBuyButtonShow();
-  const isShowBuy = useMemo(
-    () => currentToken.symbol === 'ELF' && currentToken.chainId === 'AELF' && isBuyButtonShow,
-    [currentToken.chainId, currentToken.symbol, isBuyButtonShow],
-  );
+  // const { isBuyButtonShow } = useExtensionBuyButtonShow();
+  // const isShowBuy = useMemo(
+  //   () => currentToken.symbol === 'ELF' && currentToken.chainId === 'AELF' && isBuyButtonShow,
+  //   [currentToken.chainId, currentToken.symbol, isBuyButtonShow],
+  // );
   const amountInUsdShow = useAmountInUsdShow();
   useFreshTokenPrice();
 
-  const handleBuy = useCallback(() => {
-    if (isMainNet) {
-      navigate('/buy', { state: { tokenInfo: currentToken } });
-    } else {
-      const openWinder = window.open(FAUCET_URL, '_blank');
-      if (openWinder) {
-        openWinder.opener = null;
-      }
-    }
-  }, [currentToken, isMainNet, navigate]);
+  // const handleBuy = useCallback(() => {
+  //   if (isMainNet) {
+  //     navigate('/buy', { state: { tokenInfo: currentToken } });
+  //   } else {
+  //     const openWinder = window.open(FAUCET_URL, '_blank');
+  //     if (openWinder) {
+  //       openWinder.opener = null;
+  //     }
+  //   }
+  // }, [currentToken, isMainNet, navigate]);
 
   const mainContent = useCallback(() => {
     return (
@@ -71,8 +71,8 @@ function TokenDetail() {
             </div>
             <BalanceCard
               amount={currentToken?.balanceInUsd}
-              isShowBuy={isShowBuy}
-              onBuy={handleBuy}
+              isShowBuy={false}
+              // onBuy={handleBuy}
               onSend={async () => {
                 navigate(`/send/token/${currentToken?.symbol}`, {
                   state: { ...currentToken, address: currentToken?.tokenContractAddress },
@@ -91,7 +91,7 @@ function TokenDetail() {
         </div>
       </div>
     );
-  }, [isPrompt, currentToken, isMainNet, amountInUsdShow, isShowBuy, handleBuy, navigate]);
+  }, [isPrompt, currentToken, isMainNet, amountInUsdShow, navigate]);
 
   return <>{isPrompt ? <PromptFrame content={mainContent()} /> : mainContent()}</>;
 }
