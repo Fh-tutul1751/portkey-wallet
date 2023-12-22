@@ -52,6 +52,7 @@ import ChatPrivacy from 'pages/AccountSetting/ChatPrivacy';
 import ChatPrivacyEdit from 'pages/AccountSetting/ChatPrivacyEdit';
 import GroupQRCode from 'pages/IMChat/GroupQRCode';
 import PinnedMsg from 'pages/IMChat/PinnedMsg';
+import SelectGroupMember from 'pages/IMChat/Transfer/SelectGroupMember';
 
 export const PageRouter = () =>
   useRoutes([
@@ -254,6 +255,10 @@ export const PageRouter = () =>
     {
       path: '/chat-box-group/:channelUuid',
       element: <ChatBox />,
+    },
+    {
+      path: '/chat-box-group/:channelUuid/transfer',
+      element: <SelectGroupMember />,
     },
     {
       path: '/chat-box-group/:channelUuid/pinned-msg',

@@ -106,6 +106,9 @@ export default function ChatBox() {
     () => formatMessageList({ list, ownerRelationId: relationId!, isGroup: true, isAdmin }),
     [isAdmin, list, relationId],
   );
+  const handleTransfer = useCallback(() => {
+    navigate(`/chat-box-group/${channelUuid}/transfer`);
+  }, [channelUuid, navigate]);
   const handleCancelReply = useCallback(() => {
     setReplyMsg(undefined);
   }, []);
@@ -234,8 +237,14 @@ export default function ChatBox() {
         children: 'Bookmarks',
         onClick: () => setShowBookmark(true),
       },
+      {
+        key: 'transfer',
+        leftIcon: <CustomSvg type="IMTransfer" />,
+        children: 'Transfer',
+        onClick: handleTransfer,
+      },
     ],
-    [handleSendMsgError, sendImage],
+    [handleSendMsgError, handleTransfer, sendImage],
   );
   const hidePop = useCallback((e: Event) => {
     try {

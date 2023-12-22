@@ -69,8 +69,10 @@ export default function Send() {
   const { t } = useTranslation();
   const [errorMsg, setErrorMsg] = useState('');
   const [tipMsg, setTipMsg] = useState('');
-  const [toAccount, setToAccount] = useState<{ name?: string; address: string }>({ address: '' });
-  const [stage, setStage] = useState<Stage>(Stage.Address);
+  const [toAccount, setToAccount] = useState<{ name?: string; address: string }>(
+    state.toDetail ? { name: state.toDetail.name, address: state.toDetail.address } : { address: '' },
+  );
+  const [stage, setStage] = useState<Stage>(state.toDetail ? Stage.Amount : Stage.Address);
   const [amount, setAmount] = useState('');
   const [balance, setBalance] = useState('');
   const isValidSuffix = useIsValidSuffix();
@@ -112,6 +114,13 @@ export default function Send() {
     },
     [chainInfo, isValidSuffix, state.chainId, toAccount.address, wallet],
   );
+
+  const isShowAddressCloseIcon = useMemo(() => {
+    if (state.from && state.from.channelUuid) {
+      return false;
+    }
+    return !!toAccount.address;
+  }, [state.from, toAccount.address]);
 
   const btnDisabled = useMemo(() => {
     if (toAccount.address === '' || (stage === Stage.Amount && amount === '')) return true;
@@ -330,6 +339,11 @@ export default function Send() {
           toAddress: toAccount.address,
         });
       }
+      if (state.from && state.from.channelUuid) {
+        navigate(`/chat-box-group/${state.from.channelUuid}`);
+        message.success('success');
+        return;
+      }
       message.success('success');
       navigate('/');
     } catch (error: any) {
@@ -360,6 +374,7 @@ export default function Send() {
     passwordSeed,
     setLoading,
     showErrorModal,
+    state.from,
     toAccount.address,
     tokenInfo,
     txFee,
@@ -367,6 +382,14 @@ export default function Send() {
     wallet.address,
     wallet?.caHash,
   ]);
+
+  const handleBackChat = useCallback(() => {
+    if (state.from.isGroup) {
+      navigate(`/chat-box-group/${state.from.channelUuid}/transfer`);
+    } else {
+      navigate(`/chat-box/${state.from.channelUuid}`);
+    }
+  }, [navigate, state.from.channelUuid, state.from.isGroup]);
 
   const StageObj: TypeStageObj = useMemo(
     () => ({
@@ -424,6 +447,10 @@ export default function Send() {
           }
         },
         backFun: () => {
+          if (state.from && state.from.channelUuid) {
+            handleBackChat();
+            return;
+          }
           setStage(Stage.Address);
           setAmount('');
           setTipMsg('');
@@ -478,20 +505,22 @@ export default function Send() {
       },
     }),
     [
+      tokenInfo,
       type,
       wallet,
       state.chainId,
+      state.from,
       toAccount,
       amount,
       tipMsg,
-      tokenInfo,
       getTranslationInfo,
-      txFee,
       chainInfo?.chainId,
+      txFee,
       validateToAddress,
       t,
       navigate,
       handleCheckPreview,
+      handleBackChat,
       sendHandler,
     ],
   );
@@ -534,7 +563,18 @@ export default function Send() {
           leftCallBack={() => {
             StageObj[stage].backFun();
           }}
-          rightElement={<CustomSvg type="Close2" onClick={() => navigate('/')} />}
+          rightElement={
+            <CustomSvg
+              type="Close2"
+              onClick={() => {
+                if (state.from && state.from.channelUuid) {
+                  handleBackChat();
+                  return;
+                }
+                navigate('/');
+              }}
+            />
+          }
         />
         {stage !== Stage.Preview && (
           <div className={clsx(['address-form', state.chainId !== MAIN_CHAIN_ID && 'address-form-side-chain'])}>
@@ -549,7 +589,7 @@ export default function Send() {
                 <span className="label">{t('To_with_colon')}</span>
                 <div className="control">
                   <ToAccount value={toAccount} onChange={(v) => setToAccount(v)} focus={stage !== Stage.Amount} />
-                  {toAccount.address && (
+                  {isShowAddressCloseIcon && (
                     <CustomSvg
                       type="Close2"
                       onClick={() => {
@@ -578,11 +618,14 @@ export default function Send() {
     StageObj,
     btnDisabled,
     errorMsg,
+    handleBackChat,
     isPrompt,
+    isShowAddressCloseIcon,
     navigate,
     renderSideChainTip,
     stage,
     state.chainId,
+    state.from,
     symbol,
     t,
     toAccount,

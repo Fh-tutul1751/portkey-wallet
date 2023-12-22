@@ -12,6 +12,7 @@ import { useIsTestnet } from 'hooks/useNetwork';
 import { transNetworkText } from '@portkey-wallet/utils/activity';
 import { useAmountInUsdShow, useFreshTokenPrice } from '@portkey-wallet/hooks/hooks-ca/useTokensPrice';
 import TokenImageDisplay from '../TokenImageDisplay';
+import { ChainId } from '@portkey-wallet/types';
 import './index.less';
 
 export interface ICustomTokenListProps {
@@ -19,6 +20,7 @@ export interface ICustomTokenListProps {
   onClose?: () => void;
   title?: ReactNode;
   searchPlaceHolder?: string;
+  filterChain?: ChainId[];
   drawerType: 'send' | 'receive';
 }
 
@@ -28,6 +30,7 @@ export default function CustomTokenList({
   title,
   searchPlaceHolder,
   drawerType,
+  filterChain,
 }: ICustomTokenListProps) {
   const { t } = useTranslation();
   const isTestNet = useIsTestnet();
@@ -44,12 +47,20 @@ export default function CustomTokenList({
   const caAddressInfos = useCaAddressInfoList();
   useFreshTokenPrice();
   useEffect(() => {
+    let _assetList = [];
     if (drawerType === 'send') {
-      setAssetList(accountAssets.accountAssetsList);
+      _assetList = accountAssets.accountAssetsList;
     } else {
-      setAssetList(tokenDataShowInMarket);
+      _assetList = tokenDataShowInMarket;
     }
-  }, [accountAssets.accountAssetsList, drawerType, tokenDataShowInMarket]);
+    let temp = _assetList;
+    if (filterChain) {
+      temp = _assetList.filter((asset: TokenItemShowType | AccountAssetItem) =>
+        filterChain.some((_chain) => _chain === asset.chainId),
+      );
+    }
+    setAssetList(temp);
+  }, [accountAssets.accountAssetsList, drawerType, filterChain, tokenDataShowInMarket]);
 
   useEffect(() => {
     if (!passwordSeed) return;

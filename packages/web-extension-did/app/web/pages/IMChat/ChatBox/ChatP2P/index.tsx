@@ -20,6 +20,8 @@ import ChatBoxHeader from '../components/ChatBoxHeader';
 import { useClickUrl } from 'hooks/im';
 import WarnTip from 'pages/IMChat/components/WarnTip';
 import CustomModalConfirm from 'pages/components/CustomModalConfirm';
+import CustomTokenDrawer from 'pages/components/CustomTokenDrawer';
+import { AccountAssetItem } from '@portkey-wallet/types/types-ca/token';
 
 export default function ChatBox() {
   const { channelUuid } = useParams();
@@ -29,6 +31,7 @@ export default function ChatBox() {
   const messageRef = useRef<any>(null);
   const addContactApi = useAddStrangerContact();
   const [popVisible, setPopVisible] = useState(false);
+  const [assetsOpen, setAssetsOpen] = useState(false);
   const [showStrangerTip, setShowStrangerTip] = useState(true);
   const { list, init, sendMessage, pin, mute, exit, info, sendImage, deleteMessage, hasNext, next, loading } =
     useChannel(`${channelUuid}`);
@@ -135,6 +138,12 @@ export default function ChatBox() {
         children: 'Bookmarks',
         onClick: () => setShowBookmark(true),
       },
+      {
+        key: 'transfer',
+        leftIcon: <CustomSvg type="IMTransfer" />,
+        children: 'Transfer',
+        onClick: () => setAssetsOpen(true),
+      },
     ],
     [handleSendMsgError, sendImage],
   );
@@ -162,6 +171,37 @@ export default function ChatBox() {
       }
     },
     [handleSendMsgError, sendMessage],
+  );
+  const handleSelectAssets = useCallback(
+    (v: AccountAssetItem, type: 'token' | 'nft') => {
+      console.log('AccountAssetItem', v);
+      // TODO
+      const isNFT = type === 'nft';
+      const state = {
+        chainId: v.chainId,
+        decimals: isNFT ? 0 : v.tokenInfo?.decimals,
+        address: isNFT ? v?.nftInfo?.tokenContractAddress : v?.tokenInfo?.tokenContractAddress,
+        symbol: v.symbol,
+        name: v.symbol,
+        imageUrl: isNFT ? v.nftInfo?.imageUrl : v.tokenInfo?.imageUrl,
+        alias: isNFT ? v.nftInfo?.alias : '',
+        tokenId: isNFT ? v.nftInfo?.tokenId : '',
+        toDetail: {
+          // TOOD
+          name: 'david',
+          // name: toMemberRef.current?.name,
+          // address: toMemberRef.current?.address,
+          // TODO
+          address: `ELF_2TVYbANhHescw268j3vEFNayuB3URKWmwDQs9PTx9d7tCxMkkB_AELF`,
+        },
+        from: {
+          channelUuid,
+          isGroup: false,
+        },
+      };
+      navigate(`/send/${type}/${v.symbol}`, { state });
+    },
+    [channelUuid, navigate],
   );
   const renderTitle = useMemo(
     () => (
@@ -221,6 +261,18 @@ export default function ChatBox() {
         open={showBookmark}
         onClose={() => setShowBookmark(false)}
         onClick={handleSendMessage}
+      />
+      <CustomTokenDrawer
+        open={assetsOpen}
+        drawerType={'send'}
+        title={'Select Assets'}
+        searchPlaceHolder={'Search Assets'}
+        height="528"
+        maskClosable={true}
+        placement="bottom"
+        filterChain={['AELF']}
+        onClose={() => setAssetsOpen(false)}
+        onChange={handleSelectAssets}
       />
     </div>
   );
