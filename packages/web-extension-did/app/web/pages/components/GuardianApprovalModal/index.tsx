@@ -60,7 +60,6 @@ export default function GuardianApproveModal({
       };
       return _guardian;
     });
-    _guardianList.reverse();
     setGuardianList(_guardianList);
 
     // TODO guardians store
